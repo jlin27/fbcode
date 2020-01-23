@@ -1,0 +1,193 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>anomaly_mode module &#8212; Fbcode docs  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="hogwild_trainer module" href="hogwild_trainer.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-fbcode.anomaly_mode">
+<span id="anomaly-mode-module"></span><h1>anomaly_mode module<a class="headerlink" href="#module-fbcode.anomaly_mode" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="fbcode.anomaly_mode.detect_anomaly">
+<em class="property">class </em><code class="sig-prename descclassname">fbcode.anomaly_mode.</code><code class="sig-name descname">detect_anomaly</code><a class="headerlink" href="#fbcode.anomaly_mode.detect_anomaly" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Context-manager that enable anomaly detection for the autograd engine.
+This does two things:
+- Running the forward pass with detection enabled will allow the backward
+pass to print the traceback of the forward operation that created the failing
+backward function.
+- Any backward computation that generate “nan” value will raise an error.
+.. warning:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">This</span> <span class="n">mode</span> <span class="n">should</span> <span class="n">be</span> <span class="n">enabled</span> <span class="n">only</span> <span class="k">for</span> <span class="n">debugging</span> <span class="k">as</span> <span class="n">the</span> <span class="n">different</span> <span class="n">tests</span>
+<span class="n">will</span> <span class="n">slow</span> <span class="n">down</span> <span class="n">your</span> <span class="n">program</span> <span class="n">execution</span><span class="o">.</span>
+</pre></div>
+</div>
+<dl>
+<dt>Example:</dt><dd><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">torch</span> <span class="k">import</span> <span class="n">autograd</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">MyFunc</span><span class="p">(</span><span class="n">autograd</span><span class="o">.</span><span class="n">Function</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="nd">@staticmethod</span>
+<span class="gp">... </span>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">inp</span><span class="p">):</span>
+<span class="gp">... </span>        <span class="k">return</span> <span class="n">inp</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+<span class="gp">... </span>    <span class="nd">@staticmethod</span>
+<span class="gp">... </span>    <span class="k">def</span> <span class="nf">backward</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">gO</span><span class="p">):</span>
+<span class="gp">... </span>        <span class="c1"># Error during the backward pass</span>
+<span class="gp">... </span>        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Some error in backward&quot;</span><span class="p">)</span>
+<span class="gp">... </span>        <span class="k">return</span> <span class="n">gO</span><span class="o">.</span><span class="n">clone</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">run_fn</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">out</span> <span class="o">=</span> <span class="n">MyFunc</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">inp</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">out</span> <span class="o">=</span> <span class="n">run_fn</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">out</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+<span class="go">    Traceback (most recent call last):</span>
+<span class="go">      File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;</span>
+<span class="go">      File &quot;/your/pytorch/install/torch/tensor.py&quot;, line 93, in backward</span>
+<span class="go">        torch.autograd.backward(self, gradient, retain_graph, create_graph)</span>
+<span class="go">      File &quot;/your/pytorch/install/torch/autograd/__init__.py&quot;, line 90, in backward</span>
+<span class="go">        allow_unreachable=True)  # allow_unreachable flag</span>
+<span class="go">      File &quot;/your/pytorch/install/torch/autograd/function.py&quot;, line 76, in apply</span>
+<span class="go">        return self._forward_cls.backward(self, *args)</span>
+<span class="go">      File &quot;&lt;stdin&gt;&quot;, line 8, in backward</span>
+<span class="go">    RuntimeError: Some error in backward</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">autograd</span><span class="o">.</span><span class="n">detect_anomaly</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="n">inp</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">out</span> <span class="o">=</span> <span class="n">run_fn</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">out</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+<span class="go">    Traceback of forward call that caused the error:</span>
+<span class="go">      File &quot;tmp.py&quot;, line 53, in &lt;module&gt;</span>
+<span class="go">        out = run_fn(inp)</span>
+<span class="go">      File &quot;tmp.py&quot;, line 44, in run_fn</span>
+<span class="go">        out = MyFunc.apply(a)</span>
+<span class="go">    Traceback (most recent call last):</span>
+<span class="go">      File &quot;&lt;stdin&gt;&quot;, line 4, in &lt;module&gt;</span>
+<span class="go">      File &quot;/your/pytorch/install/torch/tensor.py&quot;, line 93, in backward</span>
+<span class="go">        torch.autograd.backward(self, gradient, retain_graph, create_graph)</span>
+<span class="go">      File &quot;/your/pytorch/install/torch/autograd/__init__.py&quot;, line 90, in backward</span>
+<span class="go">        allow_unreachable=True)  # allow_unreachable flag</span>
+<span class="go">      File &quot;/your/pytorch/install/torch/autograd/function.py&quot;, line 76, in apply</span>
+<span class="go">        return self._forward_cls.backward(self, *args)</span>
+<span class="go">      File &quot;&lt;stdin&gt;&quot;, line 8, in backward</span>
+<span class="go">    RuntimeError: Some error in backward</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="class">
+<dt id="fbcode.anomaly_mode.set_detect_anomaly">
+<em class="property">class </em><code class="sig-prename descclassname">fbcode.anomaly_mode.</code><code class="sig-name descname">set_detect_anomaly</code><span class="sig-paren">(</span><em class="sig-param">mode</em><span class="sig-paren">)</span><a class="headerlink" href="#fbcode.anomaly_mode.set_detect_anomaly" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Context-manager that sets the anomaly detection for the autograd engine on or off.
+<code class="docutils literal notranslate"><span class="pre">set_detect_anomaly</span></code> will enable or disable the autograd anomaly detection
+based on its argument <code class="xref py py-attr docutils literal notranslate"><span class="pre">mode</span></code>.
+It can be used as a context-manager or as a function.
+See <code class="docutils literal notranslate"><span class="pre">detect_anomaly</span></code> above for details of the anomaly detection behaviour.
+Arguments:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>mode (bool): Flag whether to enable anomaly detection (<code class="docutils literal notranslate"><span class="pre">True</span></code>),</dt><dd><p>or disable (<code class="docutils literal notranslate"><span class="pre">False</span></code>).</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Fbcode docs</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="hogwild_trainer.html">hogwild_trainer module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">anomaly_mode module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="hogwild_trainer.html" title="previous chapter">hogwild_trainer module</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Jessica.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.2.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/anomaly_mode.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
